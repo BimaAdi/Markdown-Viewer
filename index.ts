@@ -44,6 +44,18 @@ const server = Bun.serve({
       <div class="content">
       ${rawBody}
       </div>
+      <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@12/dist/mermaid.esm.min.mjs';
+
+        mermaid.initialize({ startOnLoad: false });
+
+        // Target the <code> elements created by remark-rehype
+        document.addEventListener('DOMContentLoaded', () => {
+          mermaid.run({
+          querySelector: 'code.language-mermaid',
+          });
+        });
+      </script>
       </body>
       </html>`;
 			return new Response(rawHtml, {

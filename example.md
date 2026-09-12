@@ -25,6 +25,12 @@ A note[^1]
 * [ ] to do
 * [x] done
 
+## Code
+```ts
+let x = 10;
+console.log(x);
+```
+
 ## Mermaid
 ```mermaid
 flowchart LR
@@ -32,4 +38,10 @@ flowchart LR
     B -- Yes --> C[Great!]
     B -- No --> D[Debug Code]
     D --> B
+```
+```mermaid
+pie title Pets adopted by volunteers
+    "Dogs" : 386
+    "Cats" : 85
+    "Rats" : 15
 ```
