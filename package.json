@@ -1,0 +1,23 @@
+{
+	"name": "md-viewer",
+	"module": "index.ts",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"run": "bun run index.ts",
+		"check": "biome check --write"
+	},
+	"devDependencies": {
+		"@biomejs/biome": "2.5.12",
+		"@types/bun": "latest"
+	},
+	"peerDependencies": {
+		"typescript": "^7"
+	},
+	"dependencies": {
+		"github-markdown-css": "^5.9.0",
+		"rehype-stringify": "^10.0.1",
+		"remark-gfm": "^4.0.1",
+		"remark-rehype": "^11.1.2"
+	}
+}
