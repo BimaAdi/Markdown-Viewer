@@ -5,7 +5,8 @@
 	"private": true,
 	"scripts": {
 		"run": "bun run index.ts",
-		"check": "biome check --write"
+		"check": "biome check --write",
+		"build": "bun run build.ts"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.12",

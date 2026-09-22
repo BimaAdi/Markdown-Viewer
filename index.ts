@@ -1,3 +1,4 @@
+import { join } from "node:path";
 import rehypeStringify from "rehype-stringify";
 import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
@@ -18,10 +19,12 @@ const parseMdtoHtml = async ({ filePath }: { filePath: string }) => {
 	return String(file);
 };
 
+// make sure the css file embeded during build
+const cssFile = Bun.file(join(import.meta.dir, "./styles.css"));
+
 const server = Bun.serve({
 	routes: {
 		"/styles.css": async () => {
-			const cssFile = Bun.file("./styles.css");
 			return new Response(await cssFile.text(), {
 				headers: {
 					"Content-Type": "text/css; charset=utf-8",
