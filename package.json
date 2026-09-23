@@ -16,6 +16,7 @@
 		"typescript": "^7"
 	},
 	"dependencies": {
+		"cac": "^7.0.0",
 		"github-markdown-css": "^5.9.0",
 		"rehype-stringify": "^10.0.1",
 		"remark-gfm": "^4.0.1",
