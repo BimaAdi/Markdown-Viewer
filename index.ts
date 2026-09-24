@@ -129,15 +129,26 @@ const imageContentTypes: Record<string, string> = {
 
 const html = ({ title, rawBody }: { title: string; rawBody: string }) => `<html>
   <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${title}</title>
-  <link rel="stylesheet" href="/styles.css">
-  <style>
-    .content {
-      margin: auto;
+  <script>
+    // Apply a saved choice before the stylesheet loads. Without a saved
+    // choice, CSS uses the device's prefers-color-scheme setting.
+    try {
+      const theme = localStorage.getItem('md-viewer-theme');
+      if (theme === 'light' || theme === 'dark') {
+        document.documentElement.dataset.theme = theme;
+      }
+    } catch {
+      // Storage may be unavailable in private or restricted browsing modes.
     }
-  </style>
+  </script>
+  <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
+  <button class="theme-toggle" type="button" aria-label="Switch to dark mode">
+    Dark mode
+  </button>
   <div class="content">
   ${rawBody}
   </div>
@@ -145,6 +156,34 @@ const html = ({ title, rawBody }: { title: string; rawBody: string }) => `<html>
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@12/dist/mermaid.esm.min.mjs';
 
     mermaid.initialize({ startOnLoad: false });
+
+    const themeToggle = document.querySelector('.theme-toggle');
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+
+    const currentTheme = () => document.documentElement.dataset.theme ||
+      (mediaQuery.matches ? 'dark' : 'light');
+
+    const updateThemeToggle = () => {
+      const isDark = currentTheme() === 'dark';
+      themeToggle.textContent = isDark ? 'Switch to Light mode' : 'Switch to Dark mode';
+      themeToggle.setAttribute(
+        'aria-label',
+        isDark ? 'Switch to light mode' : 'Switch to dark mode',
+      );
+    };
+
+    themeToggle.addEventListener('click', () => {
+      const theme = currentTheme() === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = theme;
+      try {
+        localStorage.setItem('md-viewer-theme', theme);
+      } catch {
+        // Storage may be unavailable in private or restricted browsing modes.
+      }
+      updateThemeToggle();
+    });
+
+    updateThemeToggle();
 
     // Target the <code> elements created by remark-rehype
     document.addEventListener('DOMContentLoaded', () => {
