@@ -34,5 +34,5 @@ export PATH="$PATH:/usr/local/md-viewer"
 - now you mdview can be access globally `mdview --help`
 
 ## Example Markdown for Testing
-[example](example.md)
+[example](data/example.md)
 

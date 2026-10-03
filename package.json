@@ -6,7 +6,8 @@
 	"scripts": {
 		"run": "bun run index.ts",
 		"check": "biome check --write",
-		"build": "bun run build.ts"
+		"build": "bun run build.ts",
+		"test": "bun test"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.12",
