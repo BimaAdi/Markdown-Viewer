@@ -41,6 +41,33 @@ describe("md-viewer server", () => {
 		expect(html).toContain('<code class="language-mermaid">');
 	});
 
+	test("shows a file manager at the root", async () => {
+		const response = await server["/*"](handle("/"));
+
+		expect(response.status).toBe(200);
+		expect(response.headers.get("content-type")).toBe(
+			"text/html; charset=utf-8",
+		);
+
+		const html = await response.text();
+		expect(html).toContain('<link rel="stylesheet" href="/styles.css">');
+		expect(html).toContain('<div class="content">');
+		expect(html).toContain('<a href="/README.md">README.md</a>');
+		expect(html).toContain('<a href="/data/">data/</a>');
+		expect(html).not.toContain("index.ts");
+	});
+
+	test("shows supported files and a parent link for directories", async () => {
+		const response = await server["/*"](handle("/data"));
+		const html = await response.text();
+
+		expect(response.status).toBe(200);
+		expect(html).toContain('<li><a href="/">../</a></li>');
+		expect(html).toContain('<a href="/data/example.md">example.md</a>');
+		expect(html).toContain('<a href="/data/img/">img/</a>');
+		expect(html).not.toContain(".txt");
+	});
+
 	test("serves an image with the right content type and bytes", async () => {
 		const response = await server["/*"](handle(fixtures.imageUrl));
 

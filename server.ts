@@ -6,12 +6,19 @@ import {
 	parseMdtoHtml,
 	resolveImageFile,
 	resolveMarkdownFile,
+	showFileManager,
 } from "./parser";
 
 // make sure the css file embeded during build
 const cssFile = Bun.file(join(import.meta.dir, "./styles.css"));
 
-const html = ({ title, rawBody }: { title: string; rawBody: string }) => `<html>
+const htmlMarkdownPreview = ({
+	title,
+	rawBody,
+}: {
+	title: string;
+	rawBody: string;
+}) => `<html>
   <head>
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>${title}</title>
@@ -90,6 +97,20 @@ export default {
 
 	"/*": async (req: Request) => {
 		const { pathname } = new URL(req.url);
+		const fileManagerHtml = showFileManager({ pathname });
+		if (fileManagerHtml !== null) {
+			const rawHtml = htmlMarkdownPreview({
+				title: pathname,
+				rawBody: fileManagerHtml,
+			});
+			return new Response(rawHtml, {
+				status: 200,
+				headers: {
+					"content-type": "text/html; charset=utf-8",
+				},
+			});
+		}
+
 		const imagePath = resolveImageFile({ pathname });
 		if (imagePath !== null) {
 			const extension = imagePath
@@ -118,7 +139,7 @@ export default {
 
 		try {
 			const rawBody = await parseMdtoHtml({ filePath });
-			const rawHtml = html({
+			const rawHtml = htmlMarkdownPreview({
 				title: relative(BASE_DIR, filePath),
 				rawBody,
 			});

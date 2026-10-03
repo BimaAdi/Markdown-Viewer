@@ -1,5 +1,5 @@
-import { existsSync } from "node:fs";
-import { join, resolve, sep } from "node:path";
+import { type Dirent, readdirSync } from "node:fs";
+import { extname, join, resolve, sep } from "node:path";
 import rehypeStringify from "rehype-stringify";
 import remarkGfm from "remark-gfm";
 import remarkParse from "remark-parse";
@@ -27,12 +27,10 @@ export const parseMdtoHtml = async ({ filePath }: { filePath: string }) => {
 /**
  * Map a request pathname to a markdown file path inside BASE_DIR.
  *
- * - `/`               -> BASE_DIR/README.md
  * - `/README.md`      -> BASE_DIR/README.md
  * - `/README`         -> BASE_DIR/README.md
  * - `/bar.md`         -> BASE_DIR/bar.md
- * - `/bar`            -> BASE_DIR/bar.md, or BASE_DIR/bar/README.md
- * - `/foo/`           -> BASE_DIR/foo/README.md
+ * - `/bar`            -> BASE_DIR/bar.md
  * - `/foo/README.md`  -> BASE_DIR/foo/README.md
  * - `/foo/README`     -> BASE_DIR/foo/README.md
  * - `/foo/foo.md`     -> BASE_DIR/foo/foo.md
@@ -53,20 +51,18 @@ export const resolveMarkdownFile = ({ pathname }: { pathname: string }) => {
 		return null;
 	}
 
-	const filePath = (() => {
-		if (trimmed === "") {
-			return join(BASE_DIR, "README.md");
-		}
+	if (trimmed === "") {
+		return null;
+	}
 
+	const filePath = (() => {
 		if (trimmed.endsWith(".md")) {
 			return join(BASE_DIR, ...segments);
 		}
 
-		// An extensionless path can refer to either a markdown file or a
-		// directory's README. Prefer the file when both happen to exist.
+		// An extensionless path refers to a markdown file with the same name.
 		const markdownFile = `${join(BASE_DIR, ...segments)}.md`;
-		const readmeFile = join(BASE_DIR, ...segments, "README.md");
-		return existsSync(markdownFile) ? markdownFile : readmeFile;
+		return markdownFile;
 	})();
 
 	// guard against traversal even after joining (e.g. absolute-ish encodings)
@@ -76,6 +72,78 @@ export const resolveMarkdownFile = ({ pathname }: { pathname: string }) => {
 	}
 
 	return resolvedPath;
+};
+
+const escapeHtml = (value: string) =>
+	value
+		.replaceAll("&", "&amp;")
+		.replaceAll('"', "&quot;")
+		.replaceAll("<", "&lt;")
+		.replaceAll(">", "&gt;");
+
+/**
+ * Render a directory as a simple list of navigable rendered files and folders.
+ * Returns null when the pathname is unsafe or does not name a directory.
+ */
+export const showFileManager = ({ pathname }: { pathname: string }) => {
+	let decoded: string;
+	try {
+		decoded = decodeURIComponent(pathname);
+	} catch {
+		return null;
+	}
+
+	const trimmed = decoded.replace(/^\/+/, "").replace(/\/+$/, "");
+	const segments = trimmed === "" ? [] : trimmed.split("/");
+	if (segments.some((segment) => segment === ".." || segment.includes("\0"))) {
+		return null;
+	}
+
+	const directoryPath = resolve(BASE_DIR, ...segments);
+	const basePath = resolve(BASE_DIR);
+	if (
+		directoryPath !== basePath &&
+		!directoryPath.startsWith(`${basePath}${sep}`)
+	) {
+		return null;
+	}
+
+	let entries: Dirent<string>[];
+	try {
+		entries = readdirSync(directoryPath, { withFileTypes: true });
+	} catch {
+		return null;
+	}
+
+	const parentPath =
+		segments.length === 0
+			? null
+			: `/${segments.slice(0, -1).map(encodeURIComponent).join("/")}${segments.length > 1 ? "/" : ""}`;
+	const items: string[] = [];
+	if (parentPath !== null) {
+		items.push(`<li><a href="${parentPath}">../</a></li>`);
+	}
+
+	for (const entry of entries.sort((a, b) => a.name.localeCompare(b.name))) {
+		const hrefPath = `/${[...segments, entry.name].map(encodeURIComponent).join("/")}`;
+		if (entry.isDirectory()) {
+			const label = `${entry.name}/`;
+			items.push(`<li><a href="${hrefPath}/">${escapeHtml(label)}</a></li>`);
+			continue;
+		}
+
+		if (
+			[".md", ".svg", ".png", ".jpg", ".jpeg"].includes(
+				extname(entry.name).toLowerCase(),
+			)
+		) {
+			items.push(
+				`<li><a href="${hrefPath}">${escapeHtml(entry.name)}</a></li>`,
+			);
+		}
+	}
+
+	return `<ul>${items.join("")}</ul>`;
 };
 
 /**

@@ -7,7 +7,8 @@
 		"run": "bun run index.ts",
 		"check": "biome check --write",
 		"build": "bun run build.ts",
-		"test": "bun test"
+		"test": "bun test",
+		"typecheck": "tsc --noEmit"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.5.12",
