@@ -48,8 +48,8 @@ const htmlMarkdownPreview = ({
       // Storage may be unavailable in private or restricted browsing modes.
     }
   </script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.12.0/styles/dark.min.css" media="(prefers-color-scheme: dark)" data-hljs-theme="dark">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.12.0/styles/default.min.css" media="(prefers-color-scheme: light)" data-hljs-theme="light">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.12.0/styles/atom-one-dark.min.css" media="(prefers-color-scheme: dark)" data-hljs-theme="dark">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.12.0/styles/atom-one-light.min.css" media="(prefers-color-scheme: light)" data-hljs-theme="light">
   <script>window.applyHljsStylesheet();</script>
   <link rel="stylesheet" href="/styles.css">
   </head>
@@ -60,6 +60,17 @@ const htmlMarkdownPreview = ({
   <div class="content">
   ${rawBody}
   </div>
+    <script>
+    // Copy the language from <code class="language-*"> onto its <pre> so CSS can show it as a chip.
+    document.querySelectorAll('pre > code[class*="language-"]').forEach((code) => {
+      const language = [...code.classList]
+        .find((name) => name.startsWith('language-'))
+        ?.slice('language-'.length);
+      if (language && language !== 'mermaid') {
+        code.parentElement.dataset.lang = language;
+      }
+    });
+    </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
     <script>hljs.highlightAll();</script>  
     <script type="module">

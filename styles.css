@@ -234,6 +234,31 @@ pre code {
 	white-space: pre;
 }
 
+/* Language chip, filled from data-lang by the script in server.ts */
+pre[data-lang] {
+	position: relative;
+	padding-top: 2.3rem;
+}
+
+pre[data-lang]::before {
+	content: attr(data-lang);
+	position: absolute;
+	top: 0.5rem;
+	right: 0.6rem;
+	padding: 0.1rem 0.55rem;
+	background: var(--surface);
+	border: 1px solid var(--border);
+	border-radius: 999px;
+	color: var(--muted);
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+	font-size: 0.72rem;
+	font-weight: 600;
+	letter-spacing: 0.04em;
+	line-height: 1.5;
+	text-transform: uppercase;
+	pointer-events: none;
+}
+
 /* Quotes, images, and tables */
 blockquote {
 	margin-left: 0;
