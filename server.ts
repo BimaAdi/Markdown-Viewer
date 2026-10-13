@@ -25,6 +25,20 @@ const htmlMarkdownPreview = ({
   <script>
     // Apply a saved choice before the stylesheet loads. Without a saved
     // choice, CSS uses the device's prefers-color-scheme setting.
+    // Shared so it can be re-run after the highlight.js <link> tags exist
+    // and again whenever the theme toggle changes the theme.
+    window.applyHljsStylesheet = () => {
+      const isDark =
+        document.documentElement.dataset.theme === 'dark' ||
+        (!document.documentElement.dataset.theme &&
+          window.matchMedia('(prefers-color-scheme: dark)').matches);
+      document.querySelectorAll('link[data-hljs-theme]').forEach((link) => {
+        link.media =
+          link.getAttribute('data-hljs-theme') === (isDark ? 'dark' : 'light')
+            ? 'all'
+            : 'not all';
+      });
+    };
     try {
       const theme = localStorage.getItem('md-viewer-theme');
       if (theme === 'light' || theme === 'dark') {
@@ -34,6 +48,9 @@ const htmlMarkdownPreview = ({
       // Storage may be unavailable in private or restricted browsing modes.
     }
   </script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.12.0/styles/dark.min.css" media="(prefers-color-scheme: dark)" data-hljs-theme="dark">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.12.0/styles/default.min.css" media="(prefers-color-scheme: light)" data-hljs-theme="light">
+  <script>window.applyHljsStylesheet();</script>
   <link rel="stylesheet" href="/styles.css">
   </head>
   <body>
@@ -43,7 +60,9 @@ const htmlMarkdownPreview = ({
   <div class="content">
   ${rawBody}
   </div>
-  <script type="module">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>  
+    <script type="module">
     import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@12/dist/mermaid.esm.min.mjs';
 
     mermaid.initialize({ startOnLoad: false });
@@ -72,9 +91,15 @@ const htmlMarkdownPreview = ({
         // Storage may be unavailable in private or restricted browsing modes.
       }
       updateThemeToggle();
+      // Defined in the <head>; flips the highlight.js stylesheet to match.
+      window.applyHljsStylesheet();
     });
 
     updateThemeToggle();
+    window.applyHljsStylesheet();
+
+    // Follow OS-level theme changes when the user hasn't picked one manually.
+    mediaQuery.addEventListener('change', () => window.applyHljsStylesheet());
 
     // Target the <code> elements created by remark-rehype
     document.addEventListener('DOMContentLoaded', () => {
