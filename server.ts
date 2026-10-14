@@ -1,5 +1,5 @@
 import { existsSync } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, resolve, sep } from "node:path";
 import {
 	BASE_DIR,
 	imageContentTypes,
@@ -48,8 +48,8 @@ const htmlMarkdownPreview = ({
       // Storage may be unavailable in private or restricted browsing modes.
     }
   </script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.12.0/styles/atom-one-dark.min.css" media="(prefers-color-scheme: dark)" data-hljs-theme="dark">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.12.0/styles/atom-one-light.min.css" media="(prefers-color-scheme: light)" data-hljs-theme="light">
+  <link rel="stylesheet" href="/static/atom-one-dark.min.css" media="(prefers-color-scheme: dark)" data-hljs-theme="dark">
+  <link rel="stylesheet" href="/static/atom-one-light.min.css" media="(prefers-color-scheme: light)" data-hljs-theme="light">
   <script>window.applyHljsStylesheet();</script>
   <link rel="stylesheet" href="/styles.css">
   </head>
@@ -71,53 +71,65 @@ const htmlMarkdownPreview = ({
       }
     });
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
-    <script>hljs.highlightAll();</script>  
+    <script src="/static/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
     <script type="module">
-    import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@12/dist/mermaid.esm.min.mjs';
+      const themeToggle = document.querySelector('.theme-toggle');
+      const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
 
-    mermaid.initialize({ startOnLoad: false });
+      const currentTheme = () => document.documentElement.dataset.theme ||
+        (mediaQuery.matches ? 'dark' : 'light');
 
-    const themeToggle = document.querySelector('.theme-toggle');
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+      const updateThemeToggle = () => {
+        const isDark = currentTheme() === 'dark';
+        themeToggle.textContent = isDark ? 'Switch to Light mode' : 'Switch to Dark mode';
+        themeToggle.setAttribute(
+          'aria-label',
+          isDark ? 'Switch to light mode' : 'Switch to dark mode',
+        );
+      };
 
-    const currentTheme = () => document.documentElement.dataset.theme ||
-      (mediaQuery.matches ? 'dark' : 'light');
-
-    const updateThemeToggle = () => {
-      const isDark = currentTheme() === 'dark';
-      themeToggle.textContent = isDark ? 'Switch to Light mode' : 'Switch to Dark mode';
-      themeToggle.setAttribute(
-        'aria-label',
-        isDark ? 'Switch to light mode' : 'Switch to dark mode',
-      );
-    };
-
-    themeToggle.addEventListener('click', () => {
-      const theme = currentTheme() === 'dark' ? 'light' : 'dark';
-      document.documentElement.dataset.theme = theme;
-      try {
-        localStorage.setItem('md-viewer-theme', theme);
-      } catch {
-        // Storage may be unavailable in private or restricted browsing modes.
-      }
-      updateThemeToggle();
-      // Defined in the <head>; flips the highlight.js stylesheet to match.
-      window.applyHljsStylesheet();
-    });
-
-    updateThemeToggle();
-    window.applyHljsStylesheet();
-
-    // Follow OS-level theme changes when the user hasn't picked one manually.
-    mediaQuery.addEventListener('change', () => window.applyHljsStylesheet());
-
-    // Target the <code> elements created by remark-rehype
-    document.addEventListener('DOMContentLoaded', () => {
-      mermaid.run({
-      querySelector: 'code.language-mermaid',
+      themeToggle.addEventListener('click', () => {
+        const theme = currentTheme() === 'dark' ? 'light' : 'dark';
+        document.documentElement.dataset.theme = theme;
+        try {
+          localStorage.setItem('md-viewer-theme', theme);
+        } catch {
+          // Storage may be unavailable in private or restricted browsing modes.
+        }
+        updateThemeToggle();
+        // Defined in the <head>; flips the highlight.js stylesheet to match.
+        window.applyHljsStylesheet();
       });
-    });
+
+      updateThemeToggle();
+      window.applyHljsStylesheet();
+
+      // Follow OS-level theme changes when the user hasn't picked one manually.
+      mediaQuery.addEventListener('change', () => window.applyHljsStylesheet());
+    </script>
+    <script type="module">
+      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@12/dist/mermaid.esm.min.mjs';
+      // import mermaid from '/static/mermaid.esm.min.mjs';
+      /* 
+      * I try to make mermaid work offline it posible but it's painful, here's the problem
+      * - this js file will try to download other js file
+      *   and that downloaded js file will try download other js file and so on.
+      * - It only load partialy. for example if markdown only have pie chart and flow diagram
+      *   it will only load js for that part. it's good for website because you load what your
+      *   user need. But it's painful for offline which means I have to make markdown file
+      *   that include all chart and diagram in mermaid order to make sure it downloaded T T.
+      * solution: maybe there is mermaid.js version who use single js file but I doubt it
+      * */
+
+      mermaid.initialize({ startOnLoad: false });
+
+      // Target the <code> elements created by remark-rehype
+      document.addEventListener('DOMContentLoaded', () => {
+        mermaid.run({
+        querySelector: 'code.language-mermaid',
+        });
+      });
   </script>
   </body>
   </html>`;
@@ -130,7 +142,29 @@ export default {
 			},
 		});
 	},
+	"/static/*": async (req: Request) => {
+		const { pathname } = new URL(req.url);
+		const staticDir = join(import.meta.dir, "static");
 
+		let relativePath: string;
+		try {
+			relativePath = decodeURIComponent(pathname.slice("/static/".length));
+		} catch {
+			return new Response("Not found", { status: 404 });
+		}
+
+		const filePath = resolve(staticDir, relativePath);
+		if (!filePath.startsWith(staticDir + sep)) {
+			return new Response("Not found", { status: 404 });
+		}
+
+		const file = Bun.file(filePath);
+		if (!(await file.exists())) {
+			return new Response("Not found", { status: 404 });
+		}
+
+		return new Response(file);
+	},
 	"/*": async (req: Request) => {
 		const { pathname } = new URL(req.url);
 		const fileManagerHtml = showFileManager({ pathname });
