@@ -108,21 +108,9 @@ const htmlMarkdownPreview = ({
       // Follow OS-level theme changes when the user hasn't picked one manually.
       mediaQuery.addEventListener('change', () => window.applyHljsStylesheet());
     </script>
-    <script type="module">
-      import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@12/dist/mermaid.esm.min.mjs';
-      // import mermaid from '/static/mermaid.esm.min.mjs';
-      /* 
-      * I try to make mermaid work offline it posible but it's painful, here's the problem
-      * - this js file will try to download other js file
-      *   and that downloaded js file will try download other js file and so on.
-      * - It only load partialy. for example if markdown only have pie chart and flow diagram
-      *   it will only load js for that part. it's good for website because you load what your
-      *   user need. But it's painful for offline which means I have to make markdown file
-      *   that include all chart and diagram in mermaid order to make sure it downloaded T T.
-      * solution: maybe there is mermaid.js version who use single js file but I doubt it
-      * */
-
-      mermaid.initialize({ startOnLoad: false });
+    <script src="/static/mermaid.min.js"></script>
+    <script>
+      mermaid.initialize({ startOnLoad: true });
 
       // Target the <code> elements created by remark-rehype
       document.addEventListener('DOMContentLoaded', () => {
